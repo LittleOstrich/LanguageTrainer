@@ -110,6 +110,9 @@ public class ExcelReader {
 	public void updateWorkbook(Workbook wB, int r, int c, int val) {
 		Sheet s = wB.getSheetAt(0);
 		Row row = s.getRow(r);
+		if (row == null) {
+			// Codes.notify(Codes.ERROR);
+		}
 		Cell cell = row.getCell(c);
 		if (cell == null)
 			cell = row.createCell(c);
@@ -141,9 +144,7 @@ public class ExcelReader {
 			FileOutputStream fout = new FileOutputStream(f);
 			wB.write(fout);
 			fout.close();
-		} catch (
-
-		FileNotFoundException e) {
+		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();

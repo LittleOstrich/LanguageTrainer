@@ -8,7 +8,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.ResourceBundle;
 
 import org.apache.poi.ss.usermodel.Workbook;
@@ -17,8 +16,6 @@ import audio.ExecutePythonScript;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
@@ -29,7 +26,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
-import utils.Codes;
 import utils.ExcelReader;
 import utils.Pathes;
 
@@ -108,16 +104,98 @@ public class MainController implements Pathes, Initializable {
 		choicebox.setItems(FXCollections.observableArrayList(files));
 	}
 
-	public void write() {
-	}
-
-	String[] qa;
-
 	public void getKey() {
-
 		submittedAnswerTextField.setOnKeyReleased(event -> {
 			checkAnswer(event);
 		});
+	}
+
+	// public void getNextWord() {
+	// feedback.setVisible(false);
+	// question.setText("");
+	// System.out.println(submittedAnswerTextField.getText());
+	// submittedAnswerTextField.setText("");
+	// System.out.println(submittedAnswerTextField.getText());
+	//
+	// String[] qa = new String[2];
+	// int n = new Random().nextInt(LearnSet.ls.get(0).size());
+	// qa[0] = LearnSet.ls.get(0).get(n);
+	// qa[1] = LearnSet.ls.get(2).get(n);
+	// question.setText(qa[0]);
+	// }
+
+	public void resetFile() throws FileNotFoundException, IOException {
+		String selectedFile = choicebox.getValue();
+		if (selectedFile == null || selectedFile.isEmpty())
+			return;
+		new ExcelReader().resetWorkbook(TEST_PATH1 + selectedFile);
+	}
+
+	public void repeatAudio() throws URISyntaxException, InterruptedException {
+		File f = new File(BASE + AUDIO_PATH);
+		if (f.exists() && studysession != null && !submittedAnswerTextField.isFocused()) {
+			pronounce(f);
+		}
+	}
+
+	public void createNewStudySession() {
+		String selectedFile = choicebox.getValue();
+		if (selectedFile.isEmpty())
+			return;
+		clearScreen();
+
+		studysession = new StudySession(new LearnSet(TEST_PATH1 + selectedFile));
+		if (studysession.learnSet.valid_learnSet == false)
+			return;
+		startStudySession();
+
+		vocsLeft.setText("Vocs left: " + (studysession.numOfProblems));
+		correctAnswers.setText("Correct answers: " + studysession.correctAnswers);
+		wrongAnswers.setText("Wrong answers: " + studysession.wrongAnswers);
+	}
+
+	public void repeatKeyWasReleased() {
+		mainAnchorpane.setOnKeyReleased(event -> {
+			if (event.getCode().equals(KeyCode.R))
+				try {
+					repeatAudio();
+				} catch (URISyntaxException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		});
+	}
+
+	public void startStudySession() {
+		if (studysession == null) {
+			return;
+		} else if (studysession.isFinished()) {
+			endStudySession();
+			return;
+		} else {
+			continueStudySession();
+		}
+
+		// System.out.println(studysession.correctAnswers);
+		// System.out.println(studysession.wrongAnswers);
+		// System.out.println(studysession.numOfProblems);
+		// System.out.println(studysession.current);
+		// System.out.println(studysession.learnConfig == null);
+		// System.out.println(studysession.learnSet == null);
+
+	}
+
+	public void write() {
+
+	}
+
+	private void endStudySession() {
+		System.out.println("Updating Workbook...");
+		Workbook wB = studysession.updateArchiv();
+		new ExcelReader().writeBack(wB, studysession.path);
 	}
 
 	private void checkAnswer(KeyEvent event) {
@@ -180,79 +258,6 @@ public class MainController implements Pathes, Initializable {
 		}
 	}
 
-	private void updateProgress(StudySession studysession) {
-		vocsLeft.setText("Vocs left: " + (studysession.numOfProblems - studysession.current));
-		correctAnswers.setText("Correct answers: " + studysession.correctAnswers);
-		wrongAnswers.setText("Wrong answers: " + studysession.wrongAnswers);
-	}
-
-	public void getNextWord() {
-		feedback.setVisible(false);
-		question.setText("");
-		System.out.println(submittedAnswerTextField.getText());
-		submittedAnswerTextField.setText("");
-		System.out.println(submittedAnswerTextField.getText());
-		qa = new String[2];
-
-		int n = new Random().nextInt(LearnSet.ls.get(0).size());
-		qa[0] = LearnSet.ls.get(0).get(n);
-		qa[1] = LearnSet.ls.get(2).get(n);
-		question.setText(qa[0]);
-	}
-
-	public void createNewStudySession() {
-		String selectedFile = choicebox.getValue();
-		if (selectedFile.isEmpty())
-			return;
-		clearScreen();
-		studysession = new StudySession(new LearnSet(TEST_PATH1 + selectedFile));
-		if (studysession.learnSet.pS.isEmpty()) {
-			notify(Codes.EMPTY_PROBLEM_SET);
-			return;
-		}
-		startStudySession();
-		vocsLeft.setText("Vocs left: " + (studysession.numOfProblems));
-		correctAnswers.setText("Correct answers: " + studysession.correctAnswers);
-		wrongAnswers.setText("Wrong answers: " + studysession.wrongAnswers);
-	}
-
-	private void clearScreen() {
-		submittedAnswerTextField.clear();
-		translation.clear();
-		old_question.clear();
-		pronounciation.clear();
-		question.clear();
-		vocsLeft.clear();
-		correctAnswers.clear();
-		wrongAnswers.clear();
-		feedback.setImage(null);
-	}
-
-	public void startStudySession() {
-		if (studysession == null) {
-			return;
-		} else if (studysession.isFinished()) {
-			endStudySession();
-			return;
-		} else {
-			continueStudySession();
-		}
-
-		// System.out.println(studysession.correctAnswers);
-		// System.out.println(studysession.wrongAnswers);
-		// System.out.println(studysession.numOfProblems);
-		// System.out.println(studysession.current);
-		// System.out.println(studysession.learnConfig == null);
-		// System.out.println(studysession.learnSet == null);
-
-	}
-
-	private void endStudySession() {
-		System.out.println("Updating Workbook...");
-		Workbook wB = studysession.updateArchiv();
-		new ExcelReader().writeBack(wB, studysession.path);
-	}
-
 	private void continueStudySession() {
 		Problem1 p = studysession.getNextProblem();
 		playAudio(p.question);
@@ -274,33 +279,10 @@ public class MainController implements Pathes, Initializable {
 		}
 	}
 
-	public void repeatKeyWasReleased() {
-		mainAnchorpane.setOnKeyReleased(event -> {
-			if (event.getCode().equals(KeyCode.R))
-				try {
-					repeatAudio();
-				} catch (URISyntaxException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		});
-	}
-
-	public void repeatAudio() throws URISyntaxException, InterruptedException {
-		File f = new File(BASE + AUDIO_PATH);
-		if (f.exists() && studysession != null && !submittedAnswerTextField.isFocused()) {
-			pronounce(f);
-		}
-	}
-
-	public void resetFile() throws FileNotFoundException, IOException {
-		String selectedFile = choicebox.getValue();
-		if (selectedFile.isEmpty())
-			return;
-		new ExcelReader().resetWorkbook(TEST_PATH1 + selectedFile);
+	private void updateProgress(StudySession studysession) {
+		vocsLeft.setText("Vocs left: " + (studysession.numOfProblems - studysession.current));
+		correctAnswers.setText("Correct answers: " + studysession.correctAnswers);
+		wrongAnswers.setText("Wrong answers: " + studysession.wrongAnswers);
 	}
 
 	private void pronounce(File f) {
@@ -312,9 +294,15 @@ public class MainController implements Pathes, Initializable {
 		mediaPlayer.play();
 	}
 
-	private void notify(Codes code) {
-		Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setContentText(code.toString());
-		alert.showAndWait();
+	private void clearScreen() {
+		submittedAnswerTextField.clear();
+		translation.clear();
+		old_question.clear();
+		pronounciation.clear();
+		question.clear();
+		vocsLeft.clear();
+		correctAnswers.clear();
+		wrongAnswers.clear();
+		feedback.setImage(null);
 	}
 }

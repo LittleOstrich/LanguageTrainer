@@ -1,7 +1,10 @@
 package utils;
 
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+
 public enum Codes {
-	EMPTY_PROBLEM_SET("The problem set is empty! Check the correspnding file!");
+	EMPTY_PROBLEM_SET("The problem set is empty! Check the corresponding file!");
 
 	private final String name;
 
@@ -16,4 +19,11 @@ public enum Codes {
 	public String toString() {
 		return this.name;
 	}
+
+	public static void notify(Codes code) {
+		Alert alert = new Alert(AlertType.INFORMATION);
+		alert.setContentText(code.toString());
+		alert.showAndWait();
+	}
+
 }

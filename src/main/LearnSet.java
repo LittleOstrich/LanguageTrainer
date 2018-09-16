@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import utils.ArrayUtils;
+import utils.Codes;
 import utils.ExcelReader;
 import utils.ExcelReader.DEFAULT_HEADERS;
 import utils.Pathes;
@@ -29,6 +30,8 @@ public class LearnSet implements Pathes {
 	public String[] headers;
 
 	public StudyMode studyMode;
+
+	public boolean valid_learnSet = false;
 
 	public String source;
 
@@ -83,32 +86,38 @@ public class LearnSet implements Pathes {
 		int wint = StringUtils.getPos(DEFAULT_HEADERS.wrong.toString(), headers);
 		int iint = StringUtils.getPos(DEFAULT_HEADERS.ignore.toString(), headers);
 
-		for (int i = 0; i < t; i++) {
-			if (i >= m)
-				break;
-			int rInt = pph[i];
+		try {
 
-			String is = LearnSet.ls.get(iint).get(rInt);
-			// System.out.println(is);
+			for (int i = 0; i < t; i++) {
+				if (i >= m)
+					break;
+				int rInt = pph[i];
 
-			boolean dis = StringUtils.equalIgnoreCase(is, "1.0");
-			int c = (int) Float.parseFloat(LearnSet.ls.get(cint).get(rInt));
-			int w = (int) Float.parseFloat(LearnSet.ls.get(wint).get(rInt));
-			if (dis || c - w > 3) {
-				t++;
-				continue;
+				String is = LearnSet.ls.get(iint).get(rInt);
+				// System.out.println(is);
+
+				boolean dis = StringUtils.equalIgnoreCase(is, "1.0");
+				int c = (int) Float.parseFloat(LearnSet.ls.get(cint).get(rInt));
+				int w = (int) Float.parseFloat(LearnSet.ls.get(wint).get(rInt));
+				if (dis || c - w > 3) {
+					t++;
+					continue;
+				}
+
+				position.add(rInt);
+
+				String q = LearnSet.ls.get(qint).get(rInt);
+				String p = LearnSet.ls.get(pint).get(rInt);
+				String a = LearnSet.ls.get(aint).get(rInt);
+
+				if (q.isEmpty() || p.isEmpty() || a.isEmpty())
+					continue;
+				pS.add(new Problem1(q, p, a, c, w));
 			}
-
-			position.add(rInt);
-
-			String q = LearnSet.ls.get(qint).get(rInt);
-			String p = LearnSet.ls.get(pint).get(rInt);
-			String a = LearnSet.ls.get(aint).get(rInt);
-
-			if (q.isEmpty() || p.isEmpty() || a.isEmpty())
-				continue;
-			pS.add(new Problem1(q, p, a, c, w));
+		} catch (Exception e) {
+			Codes.notify(Codes.EMPTY_PROBLEM_SET);
 		}
+		valid_learnSet = true;
 	}
 
 	public void createNewProblemSet2(int n) {
